@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/quollix/taskrunner/platform"
 )
 
 func (c *Command) startDaemon(cmd *exec.Cmd) {
@@ -20,6 +22,7 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 	color := c.taskRunner.nextColor()
 	c.attachOutput(cmd, c.name, color, nil)
 
+	platform.SetProcessGroup(cmd)
 	err := cmd.Start()
 
 	if cmd.Process == nil {
@@ -89,7 +92,7 @@ func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
 			continue
 		}
 		t.Log.Info("  Killing process with ID '%v'", daemon.cmd.Process.Pid)
-		if err := daemon.cmd.Process.Kill(); err != nil {
+		if err := platform.KillProcessGroup(daemon.cmd.Process.Pid); err != nil {
 			if errors.Is(err, os.ErrProcessDone) {
 				t.Log.Info("Process with ID '%v' was already finished", daemon.cmd.Process.Pid)
 				continue
